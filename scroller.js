@@ -160,18 +160,3 @@ class slideBox {
         })(250);
     }
 }
-
-const slideBoxes = new slideBox();
-// slideBoxes.data.slideSpeed = slideBoxes.mods.randomNumber(0.5);
-slideBoxes.initAnimation({
-    data: {
-        slideSpeed: slideBoxes.mods.randomNumber(0.5),
-        slideDirection: 0,
-        // slideSpeed: 10,
-        // debugMode: true,
-    },
-    elements: {
-        slideCard: document.querySelector('.inboxSliderCard'),
-        slideBox: document.querySelector('.slideBox'),
-    }
-});
