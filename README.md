@@ -1,5 +1,5 @@
 # scroller
-a raw-scroll javascript scroller plugin.
+a raw-scroll javascript slideBox plugin.
 
 #### 功能简介
 
@@ -12,11 +12,23 @@ a raw-scroll javascript scroller plugin.
 
 ## 使用说明
 可 _手动_ 加载 `slidebox.js` 脚本后初始化，也可异步 `xhr` 加载完成初始化
-
 ```javascript
 const slideBox = new AutoSlideBox();
 slideBox.initAnimation();
 ```
+
+示例：使用自带方法修改动画实例参数
+```javascript
+slideBox._config.get('slideSpeed');  //0.25
+slideBox._config.set('slideSpeed', AutoSlideBox.BASIC.randomNumber(0.5));  //>=0.5
+slideBox.abortAnimation(function() {
+    // 手动暂停动画（可选回调）
+}, 1000);  // 可选恢复动画延迟
+slideBox.startAnimation(function() {
+    // 手动恢复动画（可选回调）
+});
+```
+
 示例：使用 `import` 完成初始化：
 ```javascript
 <script type="module">
