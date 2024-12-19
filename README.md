@@ -11,7 +11,7 @@ a raw-scroll javascript scroller plugin.
 ![marker](https://raw.githubusercontent.com/2Broear/scroller/main/scroller.gif "scroller.gif")
 
 ## 使用说明
-可 _手动_ 加载 `scroller.js` 脚本后初始化，也可异步 `xhr` 加载完成初始化
+可 _手动_ 加载 `slidebox.js` 脚本后初始化，也可异步 `xhr` 加载完成初始化
 
 ```javascript
 const slideBox = new AutoSlideBox();
