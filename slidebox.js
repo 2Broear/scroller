@@ -373,19 +373,3 @@ class AutoSlideBox extends Utils {
         // }, 1000));
     }
 }
-
-const slideBox = new AutoSlideBox({
-    slideSpeed: Utils.BASIC.randomNumber(0.5),
-    slideDirection: 1,
-    // slideSpeed: 10,
-    // slideRound: 2,
-    // slideRandom: false,
-    // slideDebug: true,
-    slideElements: {
-        // slideFrame: document.querySelector('.inboxSliderCard'),
-        // slideBox: document.querySelector('.slideBox'),
-    }
-});
-// slideBox.#config.slideSpeed = slideBox.UTILS.randomNumber(0.5); // false
-// slideBox.setConfig('slideSpeed', slideBox.UTILS.randomNumber(0.5)); // true
-slideBox.initAnimation();
