@@ -218,13 +218,15 @@ class AutoSlideBox extends Utils {
     #status = {
         // static
         isScrollToEnabled: ()=> Utils.TYPEOF.Function(this.#config.slideElements.slideFrame.scrollTo),
+        isScrollElementValid: ()=> Utils.TYPEOF.Element(this.#config.slideElements.slideFrame) && Utils.TYPEOF.Element(this.#config.slideElements.slideBox),
         // dynamic
         isScrollAvailable: ()=> {
-            const validSlideElements = Utils.TYPEOF.Element(this.#config.slideElements.slideFrame) && Utils.TYPEOF.Element(this.#config.slideElements.slideBox);
-            return validSlideElements && (this.#config.slideDirection ? this.#config.slideElements.slideFrame.scrollHeight >= this.#config.slideElements.slideFrame.offsetHeight : this.#config.slideElements.slideFrame.scrollWidth >= this.#config.slideElements.slideFrame.offsetWidth); // use >= incase default elements(html,body) provided
+            if (!this.#status.isScrollElementValid()) {
+                console.warn('slideElements is NOT valid!', this.#config.slideElements);
+                return false;
+            }
+            return this.#config.slideDirection ? this.#config.slideElements.slideFrame.scrollHeight >= this.#config.slideElements.slideFrame.offsetHeight : this.#config.slideElements.slideFrame.scrollWidth >= this.#config.slideElements.slideFrame.offsetWidth; // use >= incase default elements(html,body) provided
         },
-        // isScrollToStart: ()=> this.#config.slideDirection ? this.#config.slideOffsetsY <= 0 : this.#config.slideOffsetsX <= 0,
-        // isScrollToEnd: ()=> this.#config.slideDirection ? this.#config.slideOffsetsY >= this.#config.slideHeight : this.#config.slideOffsetsX >= this.#config.slideWidth,
     }
 
     // 更新动画状态
@@ -243,7 +245,7 @@ class AutoSlideBox extends Utils {
         };
     }
     
-    #debugAnimation() {
+    #animationDebug() {
         if (this.#config.slideDirection) {
             // if (this.#config.slideHeight !== this.#config.slideElements.slideFrame.offsetHeight) console.warn(`slideHeight(${this.#config.slideHeight}) !== slideFrame.offsetHeight(${this.#config.slideElements.slideFrame.offsetHeight})!`);
             console.log(this.#config.slideOffsetsY, this.#config.slideHeight);
@@ -253,33 +255,7 @@ class AutoSlideBox extends Utils {
         }
     }
     
-    abortAnimation (animateKey = this.#config.slideAnimate, callback, delay = 0) {
-        if (animateKey) {
-            cancelAnimationFrame(animateKey);
-            this.#config.slideAnimate = null; // 确保清除引用（内存管理优化）
-        }
-        if (Utils.TYPEOF.Function(callback)) {
-            const restartDelay = delay ? delay : this.#config.slideRestart;
-            if (restartDelay === 0 && delay === 0) {
-                callback();
-                return;
-            }
-            const timer = setTimeout(()=> {
-                callback();
-                clearTimeout(timer);
-            }, restartDelay);
-            console.log(`animation(${animateKey}) abort, restart in ${restartDelay} ms..`);
-            return;
-        }
-        console.log(`animation(${animateKey}) stoped(without callback).`);
-    }
-
-    startAnimation () {
-        // must clear animation frame(if animateKey exists) before startAnimation
-        if (this.#config.slideAnimate) cancelAnimationFrame(this.#config.slideAnimate);
-        // requestAnimationFrame 中的箭头函数会确保 this 指向 slideBox 实例，从而避免 undefined 的问题 //()=>this.startAnimation()
-        this.#config.slideAnimate = requestAnimationFrame(this.startAnimation.bind(this));
-        
+    #animationAdjust() {
         // scrollBy direction&reversible
         if (this.#config.slideDirection) {
             this.#config.slideReverse ? this.#config.slideOffsetsY -= this.#config.slideSpeed : this.#config.slideOffsetsY += this.#config.slideSpeed;
@@ -292,20 +268,15 @@ class AutoSlideBox extends Utils {
             this.#config.slideOffsetsX = this.#config.slideWidth;
             this.#config.slideOffsetsY = this.#config.slideHeight;
         }
-        
-        // animation debug
-        if (this.#config.slideDebug) this.#debugAnimation();
-        
-        // animation start
-        this.#status.isScrollToEnabled ? this.#config.slideElements.slideFrame.scrollTo(this.#config.slideOffsetsX, this.#config.slideOffsetsY) : this.#config.slideElements.slideBox.style.transform = `translate(-${this.#config.slideOffsetsX}px, ${this.#config.slideOffsetsY}px)`;
-        
-        // animation abort
+    }
+
+    #animationInbound() {
         const animationStates = this.#animationState();
         if (animationStates.status.isStart || animationStates.status.isEnd) {
             // specific rounds
             if (Utils.TYPEOF.Number(this.#config.slideRound, true) && this.#config.slideRound >= 0) {
                 if (this.#config.slideRound === 0) {
-                    this.abortAnimation(this.#config.slideAnimate, ()=> {
+                    this.abortAnimation(()=> {
                         console.log(`slideCount(${this.#config.slideCount})`, this.#config);
                     });
                     // unbind events
@@ -317,19 +288,60 @@ class AutoSlideBox extends Utils {
                 if (this.#config.slideCount >= this.#config.slideRound) this.#config.slideRound = 0;
             }
             // Infinity loop
-            this.abortAnimation(this.#config.slideAnimate, ()=> {
+            this.abortAnimation(()=> {
                 this.#config.slideReverse = animationStates.status.isEnd;  // reverse only if isScrollToEnd
                 if (this.#config.slideRandom) this.#config.slideSpeed = Utils.BASIC.randomNumber(0.25);
                 this.startAnimation();
             });
         }
     }
+
+    startAnimation (callback = false) {
+        // must clear animation frame(if animateKey exists) before startAnimation
+        if (this.#config.slideAnimate) cancelAnimationFrame(this.#config.slideAnimate);
+        
+        // requestAnimationFrame 中的箭头函数会确保 this 指向 slideBox 实例，从而避免 undefined 的问题 //()=>this.startAnimation()
+        this.#config.slideAnimate = requestAnimationFrame(this.startAnimation.bind(this));
+
+        // animation adjust(before start animation)
+        this.#animationAdjust();
+
+        // start animation
+        this.#status.isScrollToEnabled ? this.#config.slideElements.slideFrame.scrollTo(this.#config.slideOffsetsX, this.#config.slideOffsetsY) : this.#config.slideElements.slideBox.style.transform = `translate(-${this.#config.slideOffsetsX}px, ${this.#config.slideOffsetsY}px)`;
+
+        // animation inbound(after start animation)
+        this.#animationInbound();
+
+        // animation debug
+        if (this.#config.slideDebug) this.#animationDebug();
+
+        // animation callback
+        if (Utils.TYPEOF.Function(callback)) callback();
+    }
     
-    initAnimation(_conf) {
-        // console.log(this.#config.slideElements.slideFrame.scrollWidth , this.#config.slideElements.slideFrame.offsetWidth, this.#config.slideElements.slideFrame)
-        // rewrite custom arguments(data/elements only, before rewrite-elements)
-        // if (_conf.data) this.#config = Utils.BASIC.confRewriter.call(this, _conf.data, this.#config);
-        // if (_conf.elements) this.#config.slideElements = Utils.BASIC.confRewriter.call(this, _conf.elements, this.#config.slideElements);
+    abortAnimation (callback = false, delay = 0) {
+        if (this.#config.slideAnimate) {
+            cancelAnimationFrame(this.#config.slideAnimate);
+            this.#config.slideAnimate = null; // 确保清除引用（内存管理优化）
+        }
+        if (Utils.TYPEOF.Function(callback)) {
+            const restartDelay = delay ? delay : this.#config.slideRestart;
+            if (restartDelay === 0 && delay === 0) {
+                callback();
+                return;
+            }
+            const timer = setTimeout(()=> {
+                callback();
+                clearTimeout(timer);
+            }, restartDelay);
+            console.log(`animation(${this.#config.slideAnimate}) abort, restart in ${restartDelay} ms..`);
+            return;
+        }
+        console.log(`animation(${this.#config.slideAnimate}) stoped(without callback).`);
+    }
+    
+    initAnimation(callback = false) {
+        // console.log(this.#config.slideElements.slideFrame.scrollWidth , this.#config.slideElements.slideFrame.offsetWidth, this.#config.slideElements.slideFrame);
         if (!this.#status.isScrollAvailable()) {
             const error = new Error('Scroll is NOT Available!');
             error.details = {
@@ -360,7 +372,7 @@ class AutoSlideBox extends Utils {
         // bind events
         const that = this;
         this.bindEvents(this.#config.slideElements.slideFrame, 'onpointermove', Utils.CLOSURE.debounce(()=> {
-            that.abortAnimation(that.#config.slideAnimate, that.startAnimation.bind(that), 0);
+            that.abortAnimation(that.startAnimation.bind(that), 0);
         }, 500, ()=> {
             // 立即取消动画
             if (that.#config.slideAnimate) {
@@ -368,8 +380,24 @@ class AutoSlideBox extends Utils {
                 that.#config.slideAnimate = null;
             }
         }));
-        // this.bindEvents(this.#config.slideElements.slideFrame, 'onpointermove', Utils.CLOSURE.throttle(()=> {
-        //     that.abortAnimation(that.#config.slideAnimate, that.startAnimation.bind(that), 0);
-        // }, 1000));
+        
+        // init callback
+        if (Utils.TYPEOF.Function(callback)) callback();
     }
 }
+
+const slideBox = new AutoSlideBox({
+    slideSpeed: Utils.BASIC.randomNumber(0.5),
+    slideDirection: 1,
+    // slideSpeed: 10,
+    // slideRound: 2,
+    // slideRandom: false,
+    // slideDebug: true,
+    slideElements: {
+        // slideFrame: document.querySelector('.inboxSliderCard'),
+        // slideBox: document.querySelector('.slideBox'),
+    }
+});
+// slideBox.#config.slideSpeed = slideBox.UTILS.randomNumber(0.5); // false
+// slideBox._config.set('slideSpeed', slideBox.UTILS.randomNumber(0.5)); // true
+slideBox.initAnimation();
