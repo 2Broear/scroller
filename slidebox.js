@@ -385,19 +385,3 @@ class AutoSlideBox extends Utils {
         if (Utils.TYPEOF.Function(callback)) callback();
     }
 }
-
-const slideBox = new AutoSlideBox({
-    slideSpeed: Utils.BASIC.randomNumber(0.5),
-    slideDirection: 1,
-    // slideSpeed: 10,
-    // slideRound: 2,
-    // slideRandom: false,
-    // slideDebug: true,
-    slideElements: {
-        // slideFrame: document.querySelector('.inboxSliderCard'),
-        // slideBox: document.querySelector('.slideBox'),
-    }
-});
-// slideBox.#config.slideSpeed = slideBox.UTILS.randomNumber(0.5); // false
-// slideBox._config.set('slideSpeed', slideBox.UTILS.randomNumber(0.5)); // true
-slideBox.initAnimation();
